@@ -243,7 +243,7 @@ SBProcess SBTarget::LoadCore(const char *core_file) {
   lldb::SBError error; // Ignored
   return LoadCore(core_file, error);
 }
-
+#include <iostream>
 SBProcess SBTarget::LoadCore(const char *core_file, lldb::SBError &error) {
   LLDB_INSTRUMENT_VA(this, core_file, error);
 
@@ -258,10 +258,15 @@ SBProcess SBTarget::LoadCore(const char *core_file, lldb::SBError &error) {
       error.SetError(process_sp->LoadCore());
       if (error.Success())
         sb_process.SetSP(process_sp);
+      else
+        std::cout << "MIRO Failed to load core file: " << error.GetCString()
+                  << std::endl;
     } else {
+      std::cout << "MIRO Failed to create the process" << std::endl;
       error.SetErrorString("Failed to create the process");
     }
   } else {
+    std::cout << "MIRO SBTarget is invalid" << std::endl;
     error.SetErrorString("SBTarget is invalid");
   }
   return sb_process;

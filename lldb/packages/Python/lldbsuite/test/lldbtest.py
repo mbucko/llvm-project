@@ -1490,6 +1490,7 @@ class Base(unittest.TestCase):
         self.trace(seven.join_for_shell(command))
         try:
             output = check_output(command, stderr=STDOUT, errors="replace")
+            print("MIRO build command: " + str(output))
         except CalledProcessError as cpe:
             raise build_exception.BuildError(cpe)
         self.trace(output)

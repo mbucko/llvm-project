@@ -37,6 +37,8 @@
 #include "Plugins/ObjectFile/Placeholder/ObjectFilePlaceholder.h"
 #include "Plugins/Process/Utility/StopInfoMachException.h"
 
+#include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 
@@ -559,10 +561,25 @@ JITLoaderList &ProcessMinidump::GetJITLoaders() {
   return *m_jit_loaders_up;
 }
 
-#define INIT_BOOL(VAR, LONG, SHORT, DESC) \
-    VAR(LLDB_OPT_SET_1, false, LONG, SHORT, DESC, false, true)
-#define APPEND_OPT(VAR) \
-    m_option_group.Append(&VAR, LLDB_OPT_SET_ALL, LLDB_OPT_SET_1)
+const uint8_t *ProcessMinidump::PeekMemory(lldb::addr_t low, lldb::addr_t high,
+                                           size_t &available_bytes) {
+  const size_t region_size = high - low;
+  std::cout << "MIRO ProcessMinidump::GetData" << std::endl;
+
+  llvm::ArrayRef<uint8_t> mem = m_minidump_parser->GetMemory(low, region_size);
+  if (mem.empty()) {
+    std::cout << "MIRO ProcessMinidump::GetData empty" << std::endl;
+    available_bytes = 0;
+    return nullptr;
+  }
+  available_bytes = mem.size();
+  return mem.data();
+}
+
+#define INIT_BOOL(VAR, LONG, SHORT, DESC)                                      \
+  VAR(LLDB_OPT_SET_1, false, LONG, SHORT, DESC, false, true)
+#define APPEND_OPT(VAR)                                                        \
+  m_option_group.Append(&VAR, LLDB_OPT_SET_ALL, LLDB_OPT_SET_1)
 
 class CommandObjectProcessMinidumpDump : public CommandObjectParsed {
 private:

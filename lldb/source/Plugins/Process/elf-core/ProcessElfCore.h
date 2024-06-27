@@ -111,6 +111,9 @@ protected:
 
   bool SupportsMemoryTagging() override { return !m_core_tag_ranges.IsEmpty(); }
 
+  const uint8_t *PeekMemory(lldb::addr_t low, lldb::addr_t high,
+                            size_t &available_bytes) override;
+
 private:
   struct NT_FILE_Entry {
     lldb::addr_t start;

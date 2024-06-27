@@ -43,6 +43,7 @@
 #include "Plugins/ObjectFile/Mach-O/ObjectFileMachO.h"
 #include "Plugins/Platform/MacOSX/PlatformDarwinKernel.h"
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 
@@ -775,4 +776,42 @@ addr_t ProcessMachCore::GetImageInfoAddress() {
 
 lldb_private::ObjectFile *ProcessMachCore::GetCoreObjectFile() {
   return m_core_module_sp->GetObjectFile();
+}
+
+#include <iostream>
+
+const uint8_t *ProcessMachCore::PeekMemory(lldb::addr_t low, lldb::addr_t high,
+                                           size_t &available_bytes) {
+  ObjectFile *core_objfile = m_core_module_sp->GetObjectFile();
+  if (core_objfile == nullptr) {
+    available_bytes = 0;
+    return nullptr;
+  }
+
+  const VMRangeToFileOffset::Entry *address_range =
+      m_core_aranges.FindEntryThatContains(low);
+  if (address_range == nullptr || address_range->GetRangeEnd() < low) {
+    available_bytes = 0;
+    return nullptr;
+  }
+  const lldb::addr_t offset = low - address_range->GetRangeBase();
+  const lldb::addr_t file_start = address_range->data.GetRangeBase();
+  const lldb::addr_t file_end = address_range->data.GetRangeEnd();
+
+  if (file_start == file_end) {
+    available_bytes = 0;
+    return nullptr;
+  }
+  size_t bytes_to_read = high - low;
+  size_t bytes_available = 0;
+  if (file_end > file_start + offset)
+    bytes_available = file_end - (file_start + offset);
+
+  bytes_to_read = std::min(bytes_to_read, bytes_available);
+  if (bytes_to_read == 0) {
+    available_bytes = 0;
+    return nullptr;
+  }
+
+  return core_objfile->PeekData(offset, bytes_to_read, available_bytes);
 }

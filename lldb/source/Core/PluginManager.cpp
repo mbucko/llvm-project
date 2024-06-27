@@ -688,6 +688,7 @@ PluginManager::GetObjectFileCreateMemoryCallbackForPluginName(
   return nullptr;
 }
 
+#include <iostream>
 Status PluginManager::SaveCore(const lldb::ProcessSP &process_sp,
                                const FileSpec &outfile,
                                lldb::SaveCoreStyle &core_style,
@@ -706,6 +707,8 @@ Status PluginManager::SaveCore(const lldb::ProcessSP &process_sp,
   auto &instances = GetObjectFileInstances().GetInstances();
   for (auto &instance : instances) {
     if (plugin_name.empty() || instance.name == plugin_name) {
+      std::cout << "MIRO instance.name matched: " << instance.name.data()
+                << std::endl;
       if (instance.save_core &&
           instance.save_core(process_sp, outfile, core_style, error))
         return error;

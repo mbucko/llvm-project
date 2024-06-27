@@ -84,6 +84,9 @@ protected:
   DoGetMemoryRegionInfo(lldb::addr_t load_addr,
                         lldb_private::MemoryRegionInfo &region_info) override;
 
+  const uint8_t *PeekMemory(lldb::addr_t low, lldb::addr_t high,
+                            size_t &available_bytes) override;
+
 private:
   void CreateMemoryRegions();
 

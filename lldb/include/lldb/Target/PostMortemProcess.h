@@ -33,6 +33,12 @@ public:
   FileSpec GetCoreFile() const override { return m_core_file; }
 
 protected:
+  virtual const uint8_t *PeekMemory(lldb::addr_t low, lldb::addr_t high,
+                                    size_t &size) = 0;
+
+  lldb::addr_t FindInMemory(lldb::addr_t low, lldb::addr_t high,
+                            const uint8_t *buf, size_t size) override;
+
   FileSpec m_core_file;
 };
 

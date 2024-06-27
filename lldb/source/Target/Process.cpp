@@ -2021,7 +2021,19 @@ void Process::DoFindInMemory(lldb::addr_t start_addr, lldb::addr_t end_addr,
   assert(start_addr < end_addr);
 
   lldb::addr_t start = llvm::alignTo(start_addr, alignment);
+  // static uint64_t total_search_space = 0;
+  // total_search_space += (end_addr - start);
+  // std::cout
+  //     << "MIRO total search space: " << total_search_space << std::dec
+  //     << (total_search_space / 1024 / 1024) << "MiB" << std::endl;
   while (matches.size() < max_matches && (start + size) < end_addr) {
+
+    static uint64_t total_search_space = 0;
+    total_search_space += (end_addr - start);
+
+    std::cout
+        << "MIRO Process::DoFindInMemory total search: " << std::dec
+        << (total_search_space / 1024 / 1024) << "MiB" << std::endl;
     const lldb::addr_t found_addr = FindInMemory(start, end_addr, buf, size);
     if (found_addr == LLDB_INVALID_ADDRESS)
       break;
@@ -2122,6 +2134,14 @@ lldb::addr_t Process::FindInMemory(const uint8_t *buf, uint64_t size,
   const lldb::addr_t end_addr = start_addr + range.GetByteSize();
 
   AddressRanges matches;
+
+  static uint64_t total_search_space = 0;
+  total_search_space += (end_addr - start_addr);
+
+  std::cout
+      << "MIRO Process::FindInMemory total search: " << std::dec
+      << (total_search_space / 1024 / 1024) << "MiB" << std::endl;
+
   DoFindInMemory(start_addr, end_addr, buf, size, matches, alignment, 1);
   if (matches.empty())
     return LLDB_INVALID_ADDRESS;
@@ -3343,29 +3363,8 @@ Status Process::Halt(bool clear_thread_plans, bool use_run_lock) {
 
 lldb::addr_t Process::FindInMemory(lldb::addr_t low, lldb::addr_t high,
                                    const uint8_t *buf, size_t size) {
-  const size_t region_size = high - low;
-
-  if (region_size < size)
-    return LLDB_INVALID_ADDRESS;
-
-  std::vector<size_t> bad_char_heuristic(256, size);
-  ProcessMemoryIterator iterator(*this, low);
-
-  for (size_t idx = 0; idx < size - 1; idx++) {
-    decltype(bad_char_heuristic)::size_type bcu_idx = buf[idx];
-    bad_char_heuristic[bcu_idx] = size - idx - 1;
-  }
-  for (size_t s = 0; s <= (region_size - size);) {
-    int64_t j = size - 1;
-    while (j >= 0 && buf[j] == iterator[s + j])
-      j--;
-    if (j < 0)
-      return low + s;
-    else
-      s += bad_char_heuristic[iterator[s + size - 1]];
-  }
-
-  return LLDB_INVALID_ADDRESS;
+  return FindInMemoryGeneric(ProcessMemoryIterator(*this, low), low, high, buf,
+                             size);
 }
 
 Status Process::StopForDestroyOrDetach(lldb::EventSP &exit_event_sp) {
